@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Videos Settings</title>
+	<style>
+		body {
+			margin: 0px;
+    		height: 100vh;
+    		background-position: center;
+    		background-repeat: no-repeat;
+    		background-size: cover;
+    		position: relative;
+		}
+
+		.input-file {
+			position: relative;
+			display: inline-block;
+		}
+
+		.input-file span {
+			position: relative;
+			display: inline-block;
+			cursor: pointer;
+			outline: none;
+			text-decoration: none;
+			font-size: 14px;
+			vertical-align: middle;
+			color: rgb(255, 255, 255);
+			text-align: center;
+			border-radius: 4px;
+			background-color: #419152;
+			line-height: 22px;
+			height: 40px;
+			padding: 10px 20px;
+			box-sizing: border-box;
+			border: none;
+			margin: 0;
+			transition: background-color 0.2s;
+		}
+
+		.input-file input[type=file] {
+			position: absolute;
+			z-index: -1;
+			opacity: 0;
+			display: block;
+			width: 0;
+			height: 0;
+		}
+
+		
+
+		.input-file:hover span {
+			background-color: #59be6e;
+		}
+		.input-file:active span {
+			background-color: #2e703a;
+		}
+
+		.input-file input[type=file]:disabled + span {
+			background-color: #eee;
+		}
+
+		.default {
+			width: 640px;
+			margin-right: auto;
+			margin-left: auto;
+		}
+
+		.submit-btn {
+			width: 40px;
+			height: 40px;
+			border-radius: 4px;
+			border: none;
+			background-color: #000;
+			color: #fff;
+			cursor: pointer;
+			vertical-align: middle;
+		}
+
+		.submit-btn:hover {
+			opacity: 75%;
+		}
+
+		.submit-btn:active {
+			opacity: 100%;
+		}
+
+		.head {
+			margin-right: auto;
+			margin-left: auto;
+			display: flex;
+			justify-content: center;
+		}
+
+		td {
+			font-size: 22px;
+		}
+
+		.dbtn:hover {
+			opacity: 75%;
+			cursor: pointer;
+		}
+
+		.dbtn:active {
+			opacity: 100%;
+		}
+
+		.file-name {
+			padding-right: 55px;
+		}
+	</style>
+</head>
+<body>
+	<div class="default">
+		<h1 class="head">
+			Настройка сервера
+		</h1>
+		<div class="input_wrapper">
+			<form id="uploadForm" enctype="multipart/form-data">
+				<label class="input-file">
+					<input type="file" name="files" class="input input__file" id="fileInput" multiple required />
+					<span>Выберите файл</span>
+				</label>
+				<button type="submit" class="submit-btn">+</button>
+			</form>
+		<p id="status"></p>
+		</div>
+		<table id="Files">
+			<% files.forEach(function(file) { %>
+			<tr>
+				<td class="file-name">
+					<%= file %>
+				</td>
+				<td>
+					<img src="/img/trash.png" class="dbtn delete-btn" alt="">
+				</td>
+			</tr>
+			<% }); %>
+		</table>
+	</div>
+	<script>
+		const form = document.getElementById('uploadForm');
+		const status = document.getElementById('status');
+
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const formData = new FormData(form);
+
+			try {
+				const response = await fetch('/upload', {
+					method: 'POST',
+					body: formData,
+				});
+
+				const result = await response.json();
+				status.textContent = result.message;
+
+				console.log('Загруженные файлы:', result.files);
+
+				const files = result.files
+				const tableBody = document.querySelector("#Files")
+				files.forEach(file => {
+					const row = document.createElement("tr");
+					const cell = document.createElement("td");
+					const imgt = document.createElement("td");
+
+					const img = document.createElement("img");
+					img.src = "/img/trash.png"
+					img.classList.add("dbtn", "delete-btn")
+
+					imgt.appendChild(img)
+					cell.textContent = file.filename
+					
+					row.appendChild(cell)
+					row.appendChild(imgt)
+					tableBody.appendChild(row)
+				});
+
+			} catch (error) {
+				console.error('Ошибка загрузки файлов:', error);
+				status.textContent = 'Ошибка загрузки файлов';
+			}
+		});
+
+		document.querySelectorAll('.delete-btn').forEach((btn) => {
+			btn.addEventListener('click', async (event) => {
+				const row = event.target.closest('tr');
+				const fileName = row.cells[0].textContent;
+
+				try {
+					const response = await fetch(`/delete`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ fileName })
+					});
+
+					if (response.ok) {
+						row.remove();
+					} else {
+						const error = await response.json();
+						alert(`Ошибка: ${error.message}`);
+					}
+				} catch (err) {
+					console.error(err);
+					alert('Ошибка при удалении файла.');
+				}
+			});
+		});
+	</script>
+</body>
+</html>
